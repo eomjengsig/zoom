@@ -25,15 +25,12 @@ wss.on("connection", (socket) => {
   socket.on("close", () => console.log("❌Disconnected from Browser"));
   socket.on("message", (message) => {
     const parsed = JSON.parse(message);
-    switch (parsed.type) {
-      case "new_message":
-        sockets.forEach((aSocket) =>
-          aSocket.send(`${socket.nickname}: ${parsed.payload.toString()}`)
-        );
-        break;
-      case "nickname":
-        socket["nickname"] = parsed.payload;
-        break;
+    if (parsed.type === "new_message") {
+      sockets.forEach((aSocket) =>
+        aSocket.send(`${socket.nickname}: ${parsed.payload.toString()}`)
+      );
+    } else if (parsed.type === "nickname") {
+      socket["nickname"] = parsed.payload;
     }
   });
 });
