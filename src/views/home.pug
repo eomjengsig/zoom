@@ -10,21 +10,29 @@ html(lang="en")
         header  
             h1 Eom's Chat
         main    
-            h2 Welcome to Eom's Chat
-            hr
-            ul 
-            hr
+            div#welcome
+                form
+                    input(placeholder="room name", required, type="text")
+                    input#nickname(placeholder="nickname", required, type="text")
+                    button Enter Room  
+                h4 Open Room: 
+                ul
 
-            h4 이름
-            form#nick
-                input(type="text", placeholder="닉네임을 입력하세요.", required)
-                button Save
+            div#room 
+                h3 
+                ul 
+                form#name
+                    input(placeholder="username", required, type="text")
+                    button Save
 
-            
+                form#msg
+                    input(placeholder="message", required, type="text")
+                    button Send  
+                
+             
+                a(href="/") Leave Room
 
-            h4 message
-            form#message
-                input(type="text", placeholder="메세지를 입력하세요.", required)
-                button Send
 
+
+        script(src="/socket.io/socket.io.js")
         script(src="/public/js/app.js")

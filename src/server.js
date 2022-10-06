@@ -1,8 +1,7 @@
 import http from "http";
-import WebSocket from "ws";
 import express from "express";
-import { type } from "os";
-
+import { Server } from "socket.io";
+import { instrument } from "@socket.io/admin-ui";
 const app = express();
 
 app.set("view engine", "pug");
@@ -14,8 +13,59 @@ app.get("/*", (req, res) => res.redirect("/"));
 
 const handleListen = () => console.log(`✅Listening on http://localhost:4000/`);
 const server = http.createServer(app);
-const wss = new WebSocket.Server({ server });
+const io = new Server(server, {
+  cors: {
+    origin: ["https://admin.socket.io"],
+    credentials: true,
+  },
+});
+instrument(io, {
+  auth: false,
+});
 
+const publicRooms = () => {
+  const sids = io.sockets.adapter.sids;
+  const rooms = io.sockets.adapter.rooms;
+  const publicRoomList = [];
+  rooms.forEach((_, key) => {
+    if (sids.get(key) === undefined) {
+      publicRoomList.push(key);
+    }
+  });
+  return publicRoomList;
+};
+const countRoom = (roomName) => {
+  return io.sockets.adapter.rooms.get(roomName)?.size;
+};
+
+io.on("connection", (socket) => {
+  socket["nickname"] = "익명";
+  socket.onAny((event) => {
+    console.log(event);
+  });
+  socket.on("enter_room", (roomName, nick, done) => {
+    socket.join(roomName);
+    socket.nickname = nick;
+    socket.to(roomName).emit("welcome", socket.nickname, countRoom(roomName));
+    done(countRoom(roomName));
+    io.sockets.emit("room_change", publicRooms());
+  });
+  socket.on("disconnecting", () => {
+    socket.rooms.forEach((room) =>
+      socket.to(room).emit("bye", socket.nickname, countRoom(room) - 1)
+    );
+  });
+  socket.on("disconnect", () => {
+    io.sockets.emit("room_change", publicRooms());
+  });
+  socket.on("new_message", (msg, room, done) => {
+    socket.to(room).emit("new_message", `${socket.nickname}: ${msg}`);
+    done();
+  });
+  socket.on("nickname", (nickname) => (socket["nickname"] = nickname));
+});
+/*
+const wss = new WebSocket.Server({ server });
 const sockets = [];
 
 wss.on("connection", (socket) => {
@@ -34,5 +84,5 @@ wss.on("connection", (socket) => {
     }
   });
 });
-
+*/
 server.listen(4000, handleListen);
